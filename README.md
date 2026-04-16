@@ -35,6 +35,24 @@ The environment includes insecure defaults on purpose for training use. Examples
 - SSH access to the target host defined in `inventory.ini`
 - `sudo` privileges for the remote user
 
+## Reference Platform
+
+This bootstrap is currently documented and maintained against the following reference VM:
+
+```text
+Distributor ID: Ubuntu
+Description:    Ubuntu 24.04.4 LTS
+Release:        24.04
+Codename:       noble
+Linux hackademy 6.8.0-101-generic #101-Ubuntu SMP PREEMPT_DYNAMIC Fri Feb 6 20:07:40 UTC 2026 aarch64 aarch64 aarch64 GNU/Linux
+```
+
+In other words:
+
+- Ubuntu `24.04.4 LTS`
+- kernel `6.8.0-101-generic`
+- architecture `aarch64`
+
 Current inventory target:
 
 ```ini
