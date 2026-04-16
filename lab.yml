@@ -30,6 +30,20 @@
   tasks:
 
     # =========================
+    # SYSTEM UPDATE
+    # =========================
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+      when: mode == "create"
+
+    - name: Upgrade installed packages
+      apt:
+        upgrade: dist
+      when: mode == "create"
+
+    # =========================
     # BASE PACKAGES
     # =========================
 
@@ -52,7 +66,6 @@
           - tar
           - unzip
         state: present
-        update_cache: yes
       when: mode == "create"
 
     # =========================
