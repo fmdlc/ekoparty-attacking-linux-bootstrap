@@ -7,10 +7,12 @@
     wordpress_download_path: /tmp/wordpress-latest.tar.gz
     wordpress_install_path: /var/www/wordpress
     wordpress_plugins_remote_path: /tmp/wordpress-plugins
-    wordpress_site_title: "Hackademy WordPress"
+    wordpress_site_title: "Northbridge Learning"
+    wordpress_site_tagline: "Leadership, enablement, and digital learning insights."
     wordpress_admin_user: admin
     wordpress_admin_password: Hackademy
     wordpress_admin_email: admin@example.com
+    wordpress_theme_slug: astra
     webmaster_user: webmaster
     webmaster_password: Pass123
     server_name: "_"
@@ -404,6 +406,90 @@
         --user_pass={{ wordpress_admin_password }}
         --path={{ wordpress_install_path }}
         --allow-root
+      when: mode == "create"
+
+    - name: Seed WordPress theme, pages, posts, and navigation
+      shell: |
+        set -euo pipefail
+
+        WP="wp --path={{ wordpress_install_path }} --allow-root"
+
+        $WP option update blogname "{{ wordpress_site_title }}"
+        $WP option update blogdescription "{{ wordpress_site_tagline }}"
+        $WP option update timezone_string "America/Argentina/Buenos_Aires"
+        $WP option update date_format "F j, Y"
+        $WP option update time_format "g:i a"
+        $WP rewrite structure '/%postname%/' --hard
+
+        if ! $WP theme install {{ wordpress_theme_slug }} --activate --force; then
+          $WP theme activate twentytwentyfour
+        fi
+
+        $WP post delete 1 --force || true
+        $WP post delete 2 --force || true
+
+        ensure_page() {
+          local slug="$1"
+          local title="$2"
+          local content="$3"
+          local page_id
+          page_id="$($WP post list --post_type=page --name="$slug" --field=ID --posts_per_page=1)"
+
+          if [ -n "$page_id" ]; then
+            $WP post update "$page_id" --post_title="$title" --post_content="$content" >/dev/null
+          else
+            $WP post create --post_type=page --post_status=publish --post_name="$slug" --post_title="$title" --post_content="$content" >/dev/null
+          fi
+        }
+
+        ensure_post() {
+          local slug="$1"
+          local title="$2"
+          local content="$3"
+          local post_id
+          post_id="$($WP post list --post_type=post --name="$slug" --field=ID --posts_per_page=1)"
+
+          if [ -n "$post_id" ]; then
+            $WP post update "$post_id" --post_title="$title" --post_content="$content" >/dev/null
+          else
+            $WP post create --post_type=post --post_status=publish --post_name="$slug" --post_title="$title" --post_content="$content" >/dev/null
+          fi
+        }
+
+        ensure_page "home" "Home" "<!-- wp:paragraph --><p>Northbridge Learning helps distributed teams build stronger onboarding, internal enablement, and practical technical training programs.</p><!-- /wp:paragraph --><!-- wp:paragraph --><p>We work with growing companies that need structured learning content, fast rollout, and measurable outcomes.</p><!-- /wp:paragraph -->"
+        ensure_page "about" "About" "<!-- wp:paragraph --><p>We are a small learning design studio focused on internal academies, enablement programs, and operational knowledge transfer.</p><!-- /wp:paragraph --><!-- wp:paragraph --><p>Our team combines instructional design, technical writing, and platform operations experience.</p><!-- /wp:paragraph -->"
+        ensure_page "contact" "Contact" "<!-- wp:paragraph --><p>Reach our team for workshops, onboarding projects, and learning platform support.</p><!-- /wp:paragraph --><!-- wp:paragraph --><p>Email: hello@northbridge.local</p><!-- /wp:paragraph -->"
+        ensure_page "insights" "Insights" "<!-- wp:paragraph --><p>Articles, notes, and operational write-ups from the Northbridge team.</p><!-- /wp:paragraph -->"
+
+        ensure_post "building-a-practical-onboarding-track" "Building a Practical Onboarding Track" "<!-- wp:paragraph --><p>A strong onboarding flow should reduce uncertainty in the first week and give new hires enough context to make safe decisions early.</p><!-- /wp:paragraph --><!-- wp:paragraph --><p>We recommend short modules, reusable checklists, and a clear ownership model for documentation.</p><!-- /wp:paragraph -->"
+        ensure_post "why-internal-academies-fail" "Why Internal Academies Fail" "<!-- wp:paragraph --><p>Most internal learning programs fail because they grow without maintenance owners, review cycles, or operational goals.</p><!-- /wp:paragraph --><!-- wp:paragraph --><p>Good content is not enough. Teams need cadence, accountability, and discoverability.</p><!-- /wp:paragraph -->"
+        ensure_post "keeping-technical-content-fresh" "Keeping Technical Content Fresh" "<!-- wp:paragraph --><p>Technical content ages fast. The easiest win is a lightweight review process tied to product or infrastructure changes.</p><!-- /wp:paragraph --><!-- wp:paragraph --><p>Even a monthly pass over key articles can keep a knowledge base useful.</p><!-- /wp:paragraph -->"
+
+        home_id="$($WP post list --post_type=page --name=home --field=ID --posts_per_page=1)"
+        insights_id="$($WP post list --post_type=page --name=insights --field=ID --posts_per_page=1)"
+
+        $WP option update show_on_front page
+        $WP option update page_on_front "$home_id"
+        $WP option update page_for_posts "$insights_id"
+
+        if ! $WP menu list --fields=name --format=csv | grep -qx "Main Navigation"; then
+          $WP menu create "Main Navigation" >/dev/null
+        fi
+
+        menu_id="$($WP menu list --fields=term_id,name --format=csv | awk -F, '$2=="Main Navigation"{print $1}')"
+
+        existing_items="$($WP menu item list "$menu_id" --field=ID 2>/dev/null || true)"
+        if [ -n "$existing_items" ]; then
+          echo "$existing_items" | xargs -r $WP post delete --force >/dev/null
+        fi
+
+        $WP menu item add-post "$menu_id" "$home_id" >/dev/null
+        $WP menu item add-post "$menu_id" "$($WP post list --post_type=page --name=about --field=ID --posts_per_page=1)" >/dev/null
+        $WP menu item add-post "$menu_id" "$insights_id" >/dev/null
+        $WP menu item add-post "$menu_id" "$($WP post list --post_type=page --name=contact --field=ID --posts_per_page=1)" >/dev/null
+        $WP menu location assign "$menu_id" primary >/dev/null || true
+      args:
+        executable: /bin/bash
       when: mode == "create"
 
     - name: Ensure temporary WordPress plugins directory exists
