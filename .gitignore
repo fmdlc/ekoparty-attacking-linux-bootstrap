@@ -1,0 +1,66 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# Vim
+*.swp
+*.swo
+*.swn
+*.un~
+Session.vim
+.netrwhist
+
+# Generic editor backups
+*~
+*.tmp
+*.temp
+*.bak
+*.orig
+*.rej
+
+# VS Code
+.vscode/
+
+# JetBrains
+.idea/
+*.iml
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Ansible
+*.retry
+.ansible/
+
+# Logs
+*.log
+
+# Archives and exports generated during labs
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+
+# Local environment files
+.env
+.env.*
+
+# Terraform and infra leftovers
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+
+# Temporary files
+tmp/
+temp/
