@@ -472,22 +472,16 @@
         $WP option update page_on_front "$home_id"
         $WP option update page_for_posts "$insights_id"
 
-        if ! $WP menu list --fields=name --format=csv | grep -qx "Main Navigation"; then
-          $WP menu create "Main Navigation" >/dev/null
+        if $WP menu list --format=csv | grep -q "Main Navigation"; then
+          $WP menu delete "Main Navigation" >/dev/null || true
         fi
 
-        menu_id="$($WP menu list --fields=term_id,name --format=csv | awk -F, '$2=="Main Navigation"{print $1}')"
-
-        existing_items="$($WP menu item list "$menu_id" --field=ID 2>/dev/null || true)"
-        if [ -n "$existing_items" ]; then
-          echo "$existing_items" | xargs -r $WP post delete --force >/dev/null
-        fi
-
-        $WP menu item add-post "$menu_id" "$home_id" >/dev/null
-        $WP menu item add-post "$menu_id" "$($WP post list --post_type=page --name=about --field=ID --posts_per_page=1)" >/dev/null
-        $WP menu item add-post "$menu_id" "$insights_id" >/dev/null
-        $WP menu item add-post "$menu_id" "$($WP post list --post_type=page --name=contact --field=ID --posts_per_page=1)" >/dev/null
-        $WP menu location assign "$menu_id" primary >/dev/null || true
+        $WP menu create "Main Navigation" >/dev/null
+        $WP menu item add-post "Main Navigation" "$home_id" >/dev/null
+        $WP menu item add-post "Main Navigation" "$($WP post list --post_type=page --name=about --field=ID --posts_per_page=1)" >/dev/null
+        $WP menu item add-post "Main Navigation" "$insights_id" >/dev/null
+        $WP menu item add-post "Main Navigation" "$($WP post list --post_type=page --name=contact --field=ID --posts_per_page=1)" >/dev/null
+        $WP menu location assign "Main Navigation" primary >/dev/null || true
       args:
         executable: /bin/bash
       when: mode == "create"
