@@ -1,0 +1,39 @@
+- hosts: lab
+  become: yes
+  vars:
+    shell_profile_block: |
+      set -o vi
+      bind '"\C-l": clear-screen'
+      export PATH=$PATH:/home/tty0/.local/bin
+      export VISUAL=vim
+      export EDITOR=vim
+      export PAGER=vim
+
+  tasks:
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Upgrade installed packages
+      apt:
+        upgrade: dist
+
+    - name: Ensure baseline packages are installed
+      apt:
+        name:
+          - net-tools
+          - curl
+          - tcpdump
+          - vim
+        state: present
+
+    - name: Ensure shell profile settings for root and tty0
+      blockinfile:
+        path: "{{ item }}"
+        create: yes
+        marker: "# {mark} HACKADEMY SHELL SETUP"
+        block: "{{ shell_profile_block }}"
+      loop:
+        - /root/.bashrc
+        - /home/tty0/.bashrc
